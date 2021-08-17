@@ -1,2 +1,43 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+from xgboost import XGBRegressor
+from sklearn.linear_model import Ridge, Lasso
+from sklearn.ensemble import BaggingRegressor, AdaBoostRegressor, GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor, StackingRegressor, VotingRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import train_test_split
+from TaxiFareModel.trainer import Trainer
+from TaxiFareModel.data import get_data, clean_data
+
+
+regressors = {
+    'XGBRegressor': XGBRegressor(),
+    'Ridge': Ridge(),
+    'Lasso': Lasso(),
+    'DecisionTreeRegressor': DecisionTreeRegressor(),
+    'RandomForestRegressor': RandomForestRegressor(),
+    'GradientBoostingRegressor': GradientBoostingRegressor()
+}
+
+df = get_data()
+df = clean_data(df)
+y_train = df["fare_amount"]
+X_train = df.drop("fare_amount", axis=1)
+
+df_test = get_data('../raw_data/test.csv')
+X_test = clean_data(df_test)
+
+# hold out
+#X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.3)
+
+for name, regressor in regressors.items():
+    trainer = Trainer(X_train, y_train,
+                      exp_model=name+'_default',
+                      regressor=regressor)
+    score = trainer.cross_val_score()
+    print(f'Cross-validated RMSE of {name}: {round(score, 2)}')
+
+    #trainer.run()
+    #trainer.save_model(name)
