@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LinearRegression
+import joblib
 from TaxiFareModel.encoders import DistanceTransformer, TimeFeaturesEncoder
 from TaxiFareModel.utils import compute_rmse
 from TaxiFareModel.data import get_data, clean_data
@@ -14,24 +15,27 @@ from TaxiFareModel.data import get_data, clean_data
 
 
 class Trainer():
-    EXPERIMENT_NAME = "[DE] [Munich] [kickermeister] LinearRegression v1"
+    EXPERIMENT_NAME = "[DE] [Munich] [kickermeister]"
 
-    def __init__(self, X_train, y_train, experiment_name=EXPERIMENT_NAME):
+    def __init__(self, X_train, y_train, exp_model='LinearRegression v1',
+                 regressor=LinearRegression(), **kwargs):
         """
             X_train: pandas DataFrame
             y_train: pandas Series
         """
-        self.pipeline = self.set_pipeline()
+        self.pipeline = self.set_pipeline(regressor)
         self.X_train = X_train
         self.y_train = y_train
 
         # Log to score and params to MLFlow server
         self._mlflow_uri = "https://mlflow.lewagon.co/"
-        self.experiment_name = experiment_name
+        self.experiment_name = EXPERIMENT_NAME + exp_model
         self.mlflow_create_run()
-        self.mlflow_log_param("model", 'LineaRegression')
+        self.mlflow_log_param("model", exp_model)
+        for key, value in kwargs.items():
+            self.mlflow_log_param(key, value)
 
-    def set_pipeline(self):
+    def set_pipeline(self, regressor):
         '''sets a pipelined model'''
         dist_pipe = Pipeline([
             ('dist_trans', DistanceTransformer()),
@@ -47,7 +51,7 @@ class Trainer():
         ], remainder="drop")
         pipe = Pipeline([
             ('preproc', preproc_pipe),
-            ('linear_model', LinearRegression())
+            ('linear_model', regressor)
         ])
         return pipe
 
@@ -61,6 +65,10 @@ class Trainer():
         rmse = compute_rmse(y_pred, y_test)
         self.mlflow_log_metric('RMSE', rmse)
         return rmse
+
+    def save_model(self, save_name='model'):
+        """ Save the trained model into a .joblib file """
+        joblib.dump(self.pipeline, save_name+ '.joblib')
 
     @memoized_property
     def mlflow_client(self):
@@ -107,3 +115,5 @@ if __name__ == "__main__":
     # evaluate the pipeline
     rmse = trainer.evaluate(X_val, y_val)
     print(f'RMSE: {round(rmse, 2)}')
+
+    trainer.save_model()
