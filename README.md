@@ -1,74 +1,38 @@
-# Data analysis
-- Document here the project: TaxiFareModel
-- Description: Project Description
-- Data Source:
-- Type of analysis:
-
-Please document the project the better you can.
-
-# Startup the project
-
-The initial setup.
-
-Create virtualenv and install the project:
+# Installation
 ```bash
-sudo apt-get install virtualenv python-pip python-dev
-deactivate; virtualenv ~/venv ; source ~/venv/bin/activate ;\
-    pip install pip -U; pip install -r requirements.txt
+pip install git+https://github.com/kickermeister/TaxiFareModel
 ```
 
-Unittest test:
-```bash
-make clean install test
-```
 
-Check for TaxiFareModel in gitlab.com/{group}.
-If your project is not set please add it:
 
-- Create a new project on `gitlab.com/{group}/TaxiFareModel`
-- Then populate it:
+# Usage
 
-```bash
-##   e.g. if group is "{group}" and project_name is "TaxiFareModel"
-git remote add origin git@github.com:{group}/TaxiFareModel.git
-git push -u origin master
-git push -u origin --tags
-```
+```python
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.linear_model import LinearRegression
+from TaxiFareModel.encoders import DistanceTransformer, TimeFeaturesEncoder
+from TaxiFareModel.utils import compute_rmse
+from TaxiFareModel.data import get_data, clean_data
 
-Functionnal test with a script:
 
-```bash
-cd
-mkdir tmp
-cd tmp
-TaxiFareModel-run
-```
+df = get_data(aws=True)
+df = clean_data(df)
+y = df["fare_amount"]
+X = df.drop("fare_amount", axis=1)
 
-# Install
+# hold out
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.15)
 
-Go to `https://github.com/{group}/TaxiFareModel` to see the project, manage issues,
-setup you ssh public key, ...
+# build pipeline
+trainer = Trainer(X_train, y_train)
 
-Create a python3 virtualenv and activate it:
+# train the pipeline
+trainer.run()
 
-```bash
-sudo apt-get install virtualenv python-pip python-dev
-deactivate; virtualenv -ppython3 ~/venv ; source ~/venv/bin/activate
-```
-
-Clone the project and install it:
-
-```bash
-git clone git@github.com:{group}/TaxiFareModel.git
-cd TaxiFareModel
-pip install -r requirements.txt
-make clean install test                # install and test
-```
-Functionnal test with a script:
-
-```bash
-cd
-mkdir tmp
-cd tmp
-TaxiFareModel-run
+# evaluate the pipeline
+rmse = trainer.evaluate(X_val, y_val)
+print(f'RMSE: {round(rmse, 2)}')
 ```

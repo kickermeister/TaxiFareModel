@@ -4,11 +4,13 @@ import os
 AWS_BUCKET_PATH = "s3://wagon-public-datasets/taxi-fare-train.csv"
 
 
-def get_data(path='../raw_data/train.csv', nrows=10_000):
-    dir_name = os.path.dirname(__file__)
-    rel_path = os.path.join(dir_name, path)
-    csv_path = os.path.abspath(rel_path)
-    '''returns a DataFrame with nrows from local folder'''
+def get_data(path='../raw_data/train.csv', nrows=10_000, aws=False):
+    if aws == False:
+        dir_name = os.path.dirname(__file__)
+        rel_path = os.path.join(dir_name, path)
+        csv_path = os.path.abspath(rel_path)
+    else:
+        csv_path = AWS_BUCKET_PATH
     df = pd.read_csv(csv_path, nrows=nrows)
     return df
 
